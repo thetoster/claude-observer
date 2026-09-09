@@ -37,13 +37,16 @@ add_executable(claude_observer
     ${SRC}/main.c
     ${SRC}/display/framebuf.c
     ${SRC}/ui/widgets.c
+    ${SRC}/link/proto.c
+    ${SRC}/link/usb_cdc.c
+    ${SRC}/model/instances.c
     ${GEN_C}
     ${FONT_C}
 )
 add_dependencies(claude_observer assets)
 
 target_include_directories(claude_observer PRIVATE
-    ${SRC} ${SRC}/display ${SRC}/ui ${SRC}/link
+    ${SRC} ${SRC}/display ${SRC}/ui ${SRC}/link ${SRC}/model
 )
 
 target_link_libraries(claude_observer

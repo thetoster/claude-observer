@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""
+co-notify — cienki klient wysylajacy zdarzenia do co-daemon.
+
+Wolany z hookow Claude Code i z opakowania statusLine. Zasady:
+  * NIGDY nie blokuje i nigdy nie zwraca bledu — brak daemona to cichy no-op,
+    bo hook konczacy sie bledem psulby prace Claude Code,
+  * jedno sendto() na gniazdo datagramowe, bez nawiazywania polaczenia,
+  * dlawienie oparte o mtime pliku znacznika (statusLine odpala sie bardzo czesto).
+
+Uzycie:
+    co-notify --hook          < payload-hooka.json
+    co-notify --status        < payload-statusline.json
+"""
+
+import json
+import os
+import socket
+import sys
+import time
+
+THROTTLE_S = 1.0        # dla --status; hooki ida zawsze
+
+
+def sock_path() -> str:
+    rt = os.environ.get("XDG_RUNTIME_DIR")
+    return (os.path.join(rt, "claude-observer.sock") if rt
+            else f"/tmp/claude-observer-{os.getuid()}.sock")
+
+
+def throttled(session_id: str) -> bool:
+    """True gdy nalezy pominac — ostatnia wysylka byla mniej niz THROTTLE_S temu."""
+    rt = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
+    marker = os.path.join(rt, f".co-notify-{session_id[:16]}")
+    now = time.time()
+    try:
+        if now - os.path.getmtime(marker) < THROTTLE_S:
+            return True
+    except OSError:
+        pass
+    try:
+        with open(marker, "w"):
+            pass
+    except OSError:
+        pass
+    return False
+
+
+def send(payload: dict) -> None:
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    try:
+        s.setblocking(False)
+        s.sendto(json.dumps(payload).encode(), sock_path())
+    finally:
+        s.close()
+
+
+def main() -> int:
+    mode = "--hook"
+    for a in sys.argv[1:]:
+        if a in ("--hook", "--status"):
+            mode = a
+
+    try:
+        raw = sys.stdin.read()
+        data = json.loads(raw) if raw.strip() else {}
+    except Exception:
+        return 0
+
+    sid = data.get("session_id")
+    if not sid:
+        return 0
+
+    label = os.environ.get("CO_LABEL")      # D16, priorytet 1
+
+    if mode == "--status":
+        if throttled(sid):
+            return 0
+        cw = data.get("context_window") or {}
+        rl = data.get("rate_limits") or {}
+        five = (rl.get("five_hour") or {}).get("used_percentage")
+        seven = (rl.get("seven_day") or {}).get("used_percentage")
+        pct = cw.get("used_percentage")
+        send({
+            "kind": "status",
+            "session_id": sid,
+            "cwd": (data.get("workspace") or {}).get("current_dir", ""),
+            "label": label,
+            "ctx_pct": None if pct is None else int(pct),
+            # None gdy okno nieobecne — urzadzenie wyszarza ciastko (§5.2)
+            "five_h": None if five is None else int(five),
+            "seven_d": None if seven is None else int(seven),
+            "five_reset": (rl.get("five_hour") or {}).get("resets_at") or 0,
+            "seven_reset": (rl.get("seven_day") or {}).get("resets_at") or 0,
+        })
+        return 0
+
+    send({
+        "kind": "hook",
+        "session_id": sid,
+        "event": data.get("hook_event_name", ""),
+        "cwd": data.get("cwd", ""),
+        "label": label,
+        "notification_type": data.get("notification_type"),
+    })
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        sys.exit(0)         # zadna awaria klienta nie moze wywrocic hooka
