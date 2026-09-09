@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "pico2w",
+      "displayName": "Pico 2 W (RP2350)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "PICO_TOOLCHAIN_PATH": "/usr/bin"
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "pico2w",
+      "displayName": "Pico 2 W — Debug",
+      "binaryDir": "${sourceDir}/build-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "pico2w", "configurePreset": "pico2w" },
+    { "name": "debug",  "configurePreset": "debug" }
+  ]
+}

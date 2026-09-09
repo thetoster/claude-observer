@@ -69,3 +69,13 @@ Testing/
 .cache/
 spec.md
 PLAN.md
+
+# --- claude-observer ---
+.venv/
+__pycache__/
+*.pyc
+# wygenerowane z images/ przez tools/img2c.py
+firmware/src/display/assets_gen.c
+firmware/src/display/assets_gen.h
+# wyjscie harnessu renderujacego
+tools/render_out/
