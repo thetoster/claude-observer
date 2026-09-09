@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "assets_gen.h"
+#include "font_gen.h"
 
 typedef struct {
     uint16_t *px;       // CO_SCREEN_W * CO_SCREEN_H, RGB565
@@ -34,6 +35,16 @@ void co_fb_draw(co_fb_t *fb, const co_image_t *img, int dx, int dy);
 typedef bool (*co_mask_fn)(int x, int y, void *ctx);
 void co_fb_draw_masked(co_fb_t *fb, const co_image_t *img, int dx, int dy,
                        co_mask_fn keep, void *ctx);
+
+// Tekst fontem 5x8. Zwraca x za ostatnim znakiem.
+int co_fb_text(co_fb_t *fb, int x, int y, const char *s, uint16_t color);
+
+// Szerokosc napisu w pikselach (bez koncowego odstepu).
+int co_text_w(const char *s);
+
+// Kopiuje `src` do `dst` (rozmiar `cap` z NUL), skracajac do `max_chars`
+// i znaczac obciecie znakiem '~'.
+void co_text_fit(char *dst, size_t cap, const char *src, int max_chars);
 
 // Klatka animacji dla zadanego czasu (ms od startu). Zwraca NULL dla anim == NULL.
 const co_image_t *co_anim_frame(const co_anim_t *anim, uint32_t t_ms);

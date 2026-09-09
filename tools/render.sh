@@ -13,6 +13,7 @@ gcc -O2 -std=c11 -Wall -Wextra \
     "$ROOT/firmware/src/display/framebuf.c" \
     "$ROOT/firmware/src/display/assets_gen.c" \
     "$ROOT/firmware/src/ui/widgets.c" \
+    "$ROOT/firmware/src/display/font_gen.c" \
     -lm
 
 "$OUT/render_host" "$OUT"

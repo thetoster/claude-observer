@@ -11,6 +11,8 @@ pico_sdk_init()
 set(SRC ${CMAKE_CURRENT_LIST_DIR}/src)
 set(GEN_C ${SRC}/display/assets_gen.c)
 set(GEN_H ${SRC}/display/assets_gen.h)
+set(FONT_C ${SRC}/display/font_gen.c)
+set(FONT_H ${SRC}/display/font_gen.h)
 
 # Zasoby generowane z images/*.png. Regeneracja automatyczna po zmianie zrodel.
 file(GLOB ASSET_PNG ${CMAKE_CURRENT_LIST_DIR}/../images/*.png)
@@ -22,13 +24,21 @@ add_custom_command(
     COMMENT "img2c: generowanie zasobow z images/"
     VERBATIM
 )
-add_custom_target(assets DEPENDS ${GEN_C} ${GEN_H})
+add_custom_command(
+    OUTPUT ${FONT_C} ${FONT_H}
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/../tools/font2c.py
+    DEPENDS ${CMAKE_CURRENT_LIST_DIR}/../tools/font2c.py
+    COMMENT "font2c: generowanie fontu 5x8"
+    VERBATIM
+)
+add_custom_target(assets DEPENDS ${GEN_C} ${GEN_H} ${FONT_C} ${FONT_H})
 
 add_executable(claude_observer
     ${SRC}/main.c
     ${SRC}/display/framebuf.c
     ${SRC}/ui/widgets.c
     ${GEN_C}
+    ${FONT_C}
 )
 add_dependencies(claude_observer assets)
 

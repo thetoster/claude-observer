@@ -1,5 +1,7 @@
 #include "framebuf.h"
 
+#include <string.h>
+
 void co_fb_clear(co_fb_t *fb, uint16_t color)
 {
     const int n = fb->w * fb->h;
@@ -72,4 +74,38 @@ const co_image_t *co_anim_frame(const co_anim_t *anim, uint32_t t_ms)
     if (!anim || anim->n_frames == 0) return NULL;
     const uint32_t step = anim->frame_ms ? anim->frame_ms : 1;
     return &anim->frames[(t_ms / step) % anim->n_frames];
+}
+
+int co_fb_text(co_fb_t *fb, int x, int y, const char *s, uint16_t color)
+{
+    for (; *s; s++) {
+        const unsigned char ch = (unsigned char)*s;
+        if (ch < CO_FONT_FIRST || ch > CO_FONT_LAST) { x += CO_FONT_ADVANCE; continue; }
+        const uint8_t *g = co_font[ch - CO_FONT_FIRST];
+        for (int cx = 0; cx < CO_FONT_W; cx++)
+            for (int cy = 0; cy < CO_FONT_H; cy++)
+                if (g[cx] & (1u << cy)) co_fb_px(fb, x + cx, y + cy, color);
+        x += CO_FONT_ADVANCE;
+    }
+    return x;
+}
+
+int co_text_w(const char *s)
+{
+    const int n = (int)strlen(s);
+    return n ? n * CO_FONT_ADVANCE - 1 : 0;
+}
+
+void co_text_fit(char *dst, size_t cap, const char *src, int max_chars)
+{
+    if (cap == 0) return;
+    if (max_chars < 1) { dst[0] = 0; return; }
+    if ((size_t)max_chars >= cap) max_chars = (int)cap - 1;
+
+    const int n = (int)strlen(src);
+    if (n <= max_chars) { memcpy(dst, src, (size_t)n + 1); return; }
+
+    memcpy(dst, src, (size_t)max_chars - 1);
+    dst[max_chars - 1] = '~';       // znacznik obciecia
+    dst[max_chars] = 0;
 }

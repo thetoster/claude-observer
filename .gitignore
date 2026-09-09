@@ -79,3 +79,7 @@ firmware/src/display/assets_gen.c
 firmware/src/display/assets_gen.h
 # wyjscie harnessu renderujacego
 tools/render_out/
+
+# wygenerowany font
+firmware/src/display/font_gen.c
+firmware/src/display/font_gen.h
